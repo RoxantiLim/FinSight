@@ -1,0 +1,1 @@
+"""Deterministic demonstration-data generation."""

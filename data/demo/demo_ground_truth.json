@@ -1,0 +1,124 @@
+{
+  "dataset_version": "m2-v1",
+  "seed": 42,
+  "anchor_date": "2026-08-31",
+  "period": {
+    "start_month": "2026-03",
+    "end_month": "2026-08"
+  },
+  "transaction_count": 357,
+  "source_counts": {
+    "alipay": 156,
+    "wechat": 201
+  },
+  "transaction_type_counts": {
+    "expense": 337,
+    "income": 6,
+    "refund": 2,
+    "transfer": 12
+  },
+  "monthly_summary": {
+    "2026-03": {
+      "income_minor": 620000,
+      "gross_expense_minor": 432899,
+      "refund_minor": 0,
+      "net_expense_minor": 432899,
+      "balance_minor": 187101,
+      "transfer_minor_excluded": 120000
+    },
+    "2026-04": {
+      "income_minor": 620000,
+      "gross_expense_minor": 451567,
+      "refund_minor": 0,
+      "net_expense_minor": 451567,
+      "balance_minor": 168433,
+      "transfer_minor_excluded": 120000
+    },
+    "2026-05": {
+      "income_minor": 620000,
+      "gross_expense_minor": 471734,
+      "refund_minor": 16095,
+      "net_expense_minor": 455639,
+      "balance_minor": 164361,
+      "transfer_minor_excluded": 120000
+    },
+    "2026-06": {
+      "income_minor": 620000,
+      "gross_expense_minor": 464501,
+      "refund_minor": 0,
+      "net_expense_minor": 464501,
+      "balance_minor": 155499,
+      "transfer_minor_excluded": 120000
+    },
+    "2026-07": {
+      "income_minor": 620000,
+      "gross_expense_minor": 464056,
+      "refund_minor": 18358,
+      "net_expense_minor": 445698,
+      "balance_minor": 174302,
+      "transfer_minor_excluded": 120000
+    },
+    "2026-08": {
+      "income_minor": 620000,
+      "gross_expense_minor": 628258,
+      "refund_minor": 0,
+      "net_expense_minor": 628258,
+      "balance_minor": -8258,
+      "transfer_minor_excluded": 120000
+    }
+  },
+  "recent_three_months": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "recent_three_month_average_balance_minor": 107181,
+  "category_net_expense_minor": {
+    "交通": 133464,
+    "住房": 1200000,
+    "娱乐": 180544,
+    "生活缴费": 103396,
+    "订阅": 53400,
+    "购物": 646684,
+    "餐饮": 561074
+  },
+  "recent_three_month_category_net_expense_minor": {
+    "交通": 73745,
+    "住房": 600000,
+    "娱乐": 89802,
+    "生活缴费": 53345,
+    "订阅": 26700,
+    "购物": 402609,
+    "餐饮": 292256
+  },
+  "saving_goal_minor": 200000,
+  "saving_gap_minor": 92819,
+  "refunds_reduce_expense": true,
+  "transfers_excluded_from_income_and_expense": true,
+  "one_off_transaction_ids": [
+    "ALI20260822000153"
+  ],
+  "known_recurring_merchants": [
+    "云音乐",
+    "城市能源",
+    "安心公寓",
+    "效率工具",
+    "视频空间",
+    "通信服务"
+  ],
+  "latest_month_comparison": {
+    "period_a": "2026-07",
+    "period_b": "2026-08",
+    "net_expense_change_minor": 182560,
+    "category_changes_minor": {
+      "交通": 2723,
+      "住房": 0,
+      "娱乐": 77,
+      "生活缴费": 672,
+      "订阅": 0,
+      "购物": 174143,
+      "餐饮": 4945
+    }
+  },
+  "recurring_transaction_count": 42
+}
