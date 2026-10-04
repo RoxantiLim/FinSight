@@ -3,9 +3,13 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 TransactionType = Literal["income", "expense", "refund", "transfer"]
+
+
+class ToolInputModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 def validate_month(value: str) -> str:
@@ -19,7 +23,7 @@ def validate_month(value: str) -> str:
     return value
 
 
-class DateRangeInput(BaseModel):
+class DateRangeInput(ToolInputModel):
     start_date: date
     end_date: date
 
@@ -30,7 +34,7 @@ class DateRangeInput(BaseModel):
         return self
 
 
-class SearchTransactionsInput(BaseModel):
+class SearchTransactionsInput(ToolInputModel):
     start_date: date | None = None
     end_date: date | None = None
     categories: list[str] = Field(default_factory=list)
@@ -75,7 +79,7 @@ class SearchTransactionsOutput(BaseModel):
     basis: str
 
 
-class MonthlySummaryInput(BaseModel):
+class MonthlySummaryInput(ToolInputModel):
     start_month: str
     end_month: str
     exclude_transfers: bool = True
@@ -115,7 +119,7 @@ class MonthlySummaryOutput(BaseModel):
     basis: str
 
 
-class PeriodDefinition(BaseModel):
+class PeriodDefinition(ToolInputModel):
     start_date: date
     end_date: date
 
@@ -126,7 +130,7 @@ class PeriodDefinition(BaseModel):
         return self
 
 
-class ComparePeriodsInput(BaseModel):
+class ComparePeriodsInput(ToolInputModel):
     period_a: PeriodDefinition
     period_b: PeriodDefinition
     categories: list[str] = Field(default_factory=list)
@@ -183,7 +187,7 @@ class CategoryBreakdownOutput(BaseModel):
     basis: str
 
 
-class RecurringExpensesInput(BaseModel):
+class RecurringExpensesInput(ToolInputModel):
     lookback_months: int = Field(default=6, ge=2, le=24)
     as_of_month: str | None = None
     min_occurrences: int = Field(default=3, ge=2, le=24)
@@ -241,7 +245,7 @@ class AbnormalTransactionsOutput(BaseModel):
     basis: str
 
 
-class SavingGapInput(BaseModel):
+class SavingGapInput(ToolInputModel):
     target_amount_minor: int = Field(gt=0)
     lookback_months: int = Field(default=3, ge=1, le=24)
     as_of_month: str | None = None
@@ -267,7 +271,7 @@ class SavingGapOutput(BaseModel):
     basis: str
 
 
-class SimulateBudgetInput(BaseModel):
+class SimulateBudgetInput(ToolInputModel):
     target_month: str
     target_saving_minor: int = Field(gt=0)
     lookback_months: int = Field(default=3, ge=1, le=24)

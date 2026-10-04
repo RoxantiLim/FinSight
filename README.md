@@ -4,7 +4,7 @@
 
 FinSight Agent 读取可复现的模拟账单或用户导入的微信、支付宝账单，使用确定性工具完成金额计算，再由模型根据用户目标动态选择工具、连续调查并生成可执行的储蓄计划。
 
-> 当前状态：里程碑 2 已完成。数据导入和 8 个确定性财务工具均可独立运行和测试；下一阶段是接入 DeepSeek，实现模型驱动的动态工具循环。
+> 当前状态：里程碑 3 已完成。DeepSeek 已能围绕用户问题动态选择 8 个只读工具、连续调查并生成经预算模拟验证的回答；下一阶段是加入需要用户确认的预算写操作。
 
 ## 核心演示
 
@@ -58,6 +58,15 @@ FinSight Agent 读取可复现的模拟账单或用户导入的微信、支付�
 | `simulate_budget` | 模拟分类预算，验证计划能否覆盖缺口 |
 
 所有工具都使用 Pydantic 输入输出契约，可以脱离 Agent 独立调用。工具不会返回来源订单号、去重哈希或完整交易备注。
+
+### M3：模型驱动的 Agent 工具循环
+
+- DeepSeek Responses API 原生 function calling；
+- 模型输出与工具结果组成无状态多轮上下文；
+- 参数严格校验、连续重复调用保护、10 次调用上限、总超时和连续错误上限；
+- `agent_runs` 与 `tool_calls` 保存模型、提示词版本及安全轨迹摘要；
+- `ask-agent` 单问题入口与 `eval-agent` 固定 E01–E05 评测入口；
+- 编排代码不包含针对具体问题的固定工具顺序。
 
 ## 数据来源
 
@@ -117,12 +126,11 @@ uv sync --all-groups
 uv run python -m app.cli setup-demo --output data/demo --db data/runtime/finsight.db
 ```
 
-如果本机未将 `uv` 加入 `PATH`，当前开发环境中的可执行文件位于：
+复制环境变量模板并填写自己的 DeepSeek 密钥：
 
 ```powershell
-$uv = "E:\for-LLM\AUXI\uv-tool\Scripts\uv.exe"
-& $uv sync --all-groups
-& $uv run python -m app.cli setup-demo --output data/demo --db data/runtime/finsight.db
+Copy-Item .env.example .env
+# 编辑 .env，只在本机填写 DEEPSEEK_API_KEY；.env 已被 Git 忽略。
 ```
 
 `setup-demo` 会完成三件事：生成四个演示文件、创建 SQLite 表、依次导入微信和支付宝账单。再次执行同一命令时，两份导入报告的 `imported_rows` 都应为 `0`。
@@ -134,6 +142,15 @@ uv run python -m app.cli run-tool calculate_saving_gap --arguments '{"target_amo
 uv run python -m app.cli run-tool find_abnormal_transactions --arguments '{"start_date":"2026-08-01","end_date":"2026-08-31"}'
 uv run python -m app.cli tool-schema simulate_budget
 ```
+
+运行 Agent 核心问题与固定评测：
+
+```powershell
+uv run python -m app.cli ask-agent "我下个月想存下2000元，请根据最近三个月的消费帮我制定计划。"
+uv run python -m app.cli eval-agent
+```
+
+`ask-agent` 返回最终回答和工具级轨迹。`eval-agent` 检查 E01–E05 的必需工具、禁止工具、最少调用数和运行状态；它会产生真实 DeepSeek API 用量。
 
 单独执行各步骤：
 
@@ -178,6 +195,20 @@ uv run ruff check .
 | 全部 Pytest | 11 passed |
 | Ruff | All checks passed |
 
+## M3 验收结果
+
+| 检查项 | 结果 |
+|---|---:|
+| 核心储蓄问题 | completed |
+| 核心工具路径 | 缺口 → 分类 → 周期支出 → 预算模拟 |
+| 核心场景工具调用 | 4 次 |
+| 模拟预计结余 | 2,000.81 元，达标 |
+| 固定 Agent 评测 | E01–E05：5 / 5 passed |
+| 动态路径 | 5 个问题产生 5 条不同工具序列 |
+| 失败保护测试 | 参数错误、连续重复、调用上限 |
+| 全部 Pytest | 18 passed |
+| Ruff | All checks passed |
+
 演示数据位于 `data/demo/`：
 
 - `demo_transactions.csv`：统一模型；
@@ -189,6 +220,7 @@ uv run ruff check .
 
 ```text
 app/
+  agent/         # DeepSeek 适配、多轮循环、轨迹与评测
   analytics/     # 8 个确定性工具、schema 和注册表
   demo/          # 固定数据生成器
   importers/     # 微信、支付宝适配器
@@ -196,12 +228,12 @@ app/
   cli.py         # 数据导入与工具调试入口
 data/demo/       # 可公开提交的合成数据
 docs/            # 需求、架构、数据模型、Agent 与执行计划
-tests/           # 数据、导入和分析工具验收测试
+tests/           # 数据、导入、分析工具和 Agent 循环测试
 ```
 
 ## 下一步
 
-里程碑 3 将接入 DeepSeek Responses API，把这 8 个工具注册给模型，并实现有调用上限、参数校验、重复调用保护和可观察轨迹的动态 Agent 循环。
+里程碑 4 将实现预算提议的待确认、确认、拒绝、过期和幂等保存。普通 Agent 循环仍只暴露只读工具；未经确认不会修改任何财务数据。
 
 ## 计划中的演示问题
 

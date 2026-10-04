@@ -3,12 +3,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -81,3 +83,41 @@ class Transaction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     import_batch: Mapped[ImportBatch] = relationship(back_populates="transactions")
+
+
+class AgentRun(Base):
+    __tablename__ = "agent_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(64), index=True)
+    user_request_safe: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32), default="running", index=True)
+    model: Mapped[str] = mapped_column(String(128))
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    final_response_safe: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    tool_calls: Mapped[list[ToolCall]] = relationship(
+        back_populates="agent_run", cascade="all, delete-orphan"
+    )
+
+
+class ToolCall(Base):
+    __tablename__ = "tool_calls"
+    __table_args__ = (
+        UniqueConstraint("agent_run_id", "sequence_no", name="uq_tool_call_sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    agent_run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), index=True)
+    sequence_no: Mapped[int] = mapped_column(Integer)
+    tool_name: Mapped[str] = mapped_column(String(128))
+    arguments_safe: Mapped[dict[str, object]] = mapped_column(JSON)
+    result_summary: Mapped[dict[str, object]] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(32))
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    agent_run: Mapped[AgentRun] = relationship(back_populates="tool_calls")

@@ -157,17 +157,17 @@ M1 不接入模型、不做聊天、不做图表。
 请阅读 README.md、docs/requirements.md、docs/architecture.md、
 docs/data-model.md、docs/milestones.md 和 docs/execution-plan.md。
 
-M1、M2 已验收。现在只实现 M3：模型驱动的 Agent 工具循环。
+M1、M2、M3 已验收。现在只实现 M4：Human-in-the-loop 写操作。
 
-严格遵守 docs/milestones.md 中的 M3 范围和范围控制规则。
-开始前先确认 DeepSeek 接口、工具循环边界和验收命令；然后直接实现、运行测试并修复问题。
+严格遵守 docs/milestones.md 中的 M4 范围和范围控制规则。
+开始前先确认待确认动作状态机、payload 哈希和幂等边界；然后直接实现、运行测试并修复问题。
 
 完成后报告：
 1. 创建或修改的文件；
 2. 数据生成和导入流程；
 3. 实际运行的命令及结果；
-4. M3 的验收条件是否逐项通过；
+4. M4 的验收条件是否逐项通过；
 5. 我需要理解的三个关键知识点。
 
-不要实现 M4 写操作，不要开始 UI。
+不要开始 M5 UI。
 ```

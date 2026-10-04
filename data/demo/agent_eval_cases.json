@@ -1,0 +1,41 @@
+[
+  {
+    "id": "E01",
+    "question": "我下个月想存下2000元，请根据最近三个月的消费帮我制定计划。",
+    "required_tools": [
+      "calculate_saving_gap",
+      "get_category_breakdown",
+      "simulate_budget"
+    ],
+    "forbidden_tools": [],
+    "min_tool_calls": 3
+  },
+  {
+    "id": "E02",
+    "question": "为什么我这个月比上个月花得多？",
+    "required_tools": ["compare_periods"],
+    "forbidden_tools": ["simulate_budget"],
+    "min_tool_calls": 1
+  },
+  {
+    "id": "E03",
+    "question": "我有哪些可能可以取消的周期性支出？",
+    "required_tools": ["find_recurring_expenses"],
+    "forbidden_tools": ["simulate_budget"],
+    "min_tool_calls": 1
+  },
+  {
+    "id": "E04",
+    "question": "最近是否存在异常消费？",
+    "required_tools": ["find_abnormal_transactions"],
+    "forbidden_tools": ["simulate_budget"],
+    "min_tool_calls": 1
+  },
+  {
+    "id": "E05",
+    "question": "如果餐饮预算降低20%，每月能多存多少钱？",
+    "required_tools": ["get_category_breakdown", "simulate_budget"],
+    "forbidden_tools": [],
+    "min_tool_calls": 2
+  }
+]

@@ -7,8 +7,15 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from app.agent import AgentRunner, DeepSeekResponsesClient
+from app.agent.evaluation import build_evaluation_report, evaluate_case, load_evaluation_cases
 from app.analytics import TOOL_NAMES, execute_tool, get_tool_input_schema
-from app.config import DEFAULT_DATABASE_PATH, DEFAULT_DEMO_OUTPUT_DIR, DEFAULT_DEMO_USER_ID
+from app.config import (
+    DEFAULT_DATABASE_PATH,
+    DEFAULT_DEMO_OUTPUT_DIR,
+    DEFAULT_DEMO_USER_ID,
+    AgentSettings,
+)
 from app.db import create_db_engine, create_schema, create_session_factory
 from app.demo.generator import DEFAULT_ANCHOR_DATE, DEFAULT_SEED, generate_demo_dataset
 from app.importers import AlipayAdapter, WechatAdapter
@@ -65,6 +72,24 @@ def build_parser() -> argparse.ArgumentParser:
 
     tool_schema = subparsers.add_parser("tool-schema", help="输出分析工具输入 schema")
     tool_schema.add_argument("tool_name", choices=TOOL_NAMES)
+
+    ask_agent = subparsers.add_parser("ask-agent", help="运行模型驱动的财务 Agent")
+    ask_agent.add_argument("question")
+    ask_agent.add_argument("--db", type=Path, default=DEFAULT_DATABASE_PATH)
+    ask_agent.add_argument("--user-id", default=DEFAULT_DEMO_USER_ID)
+    ask_agent.add_argument("--max-tool-calls", type=int, default=None)
+    ask_agent.add_argument("--timeout", type=float, default=None)
+
+    eval_agent = subparsers.add_parser("eval-agent", help="运行固定 E01-E05 Agent 评测集")
+    eval_agent.add_argument(
+        "--cases",
+        type=Path,
+        default=Path("data/demo/agent_eval_cases.json"),
+    )
+    eval_agent.add_argument("--db", type=Path, default=DEFAULT_DATABASE_PATH)
+    eval_agent.add_argument("--user-id", default=DEFAULT_DEMO_USER_ID)
+    eval_agent.add_argument("--max-tool-calls", type=int, default=None)
+    eval_agent.add_argument("--timeout", type=float, default=None)
     return parser
 
 
@@ -87,6 +112,21 @@ def _run_import(
             user_id=user_id,
         )
     return report.model_dump(mode="json")
+
+
+def _load_agent_settings(args: argparse.Namespace) -> AgentSettings:
+    settings = AgentSettings.from_env()
+    updates: dict[str, object] = {}
+    if args.max_tool_calls is not None:
+        updates["max_tool_calls"] = args.max_tool_calls
+    if args.timeout is not None:
+        updates["timeout_seconds"] = args.timeout
+    return AgentSettings.model_validate({**settings.model_dump(), **updates})
+
+
+def _agent_error(message: str) -> int:
+    _print_json({"status": "failed", "error": message})
+    return 2
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -158,6 +198,47 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "tool-schema":
         _print_json(get_tool_input_schema(args.tool_name))
         return 0
+    if args.command == "ask-agent":
+        try:
+            settings = _load_agent_settings(args)
+        except ValueError as exc:
+            return _agent_error(str(exc))
+        engine = create_db_engine(args.db)
+        create_schema(engine)
+        session_factory = create_session_factory(engine)
+        client = DeepSeekResponsesClient(settings)
+        with session_factory() as session:
+            result = AgentRunner(
+                session,
+                user_id=args.user_id,
+                model_client=client,
+                settings=settings,
+            ).run(args.question)
+        _print_json(result.model_dump(mode="json"))
+        return 0 if result.status == "completed" else 1
+    if args.command == "eval-agent":
+        try:
+            settings = _load_agent_settings(args)
+            cases = load_evaluation_cases(args.cases)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            return _agent_error(str(exc))
+        engine = create_db_engine(args.db)
+        create_schema(engine)
+        session_factory = create_session_factory(engine)
+        client = DeepSeekResponsesClient(settings)
+        evaluations = []
+        with session_factory() as session:
+            for case in cases:
+                result = AgentRunner(
+                    session,
+                    user_id=args.user_id,
+                    model_client=client,
+                    settings=settings,
+                ).run(case.question)
+                evaluations.append(evaluate_case(case, result))
+        report = build_evaluation_report(model=settings.model, results=evaluations)
+        _print_json(report.model_dump(mode="json"))
+        return 0 if report.passed == report.total else 1
     raise AssertionError(f"unknown command: {args.command}")
 
 
